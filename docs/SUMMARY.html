@@ -46,12 +46,12 @@
     <h2>Model signal</h2>
     <p>The final model uses prosodic cues from the speech immediately preceding the pause:</p>
     <ul>
-      <li>Energy and energy decay into the pause</li>
+      <li>Multi-window energy trends from the last 100 ms, 250 ms, and 500 ms before the pause</li>
       <li>Voiced/unvoiced ratio and voiced-region duration</li>
       <li>Pitch behavior near the pause, including final pitch and pitch slope</li>
-      <li>Pause index and context duration</li>
+      <li>Speaking-rate-style voiced-frame density and pause context</li>
     </ul>
-    <p>These features are more informative than silence alone because true EOTs often show a more terminal prosodic pattern, whereas hold pauses often have more hesitant or less terminal cues.</p>
+    <p>These features are more informative than silence alone because true EOTs often show a more terminal prosodic pattern, whereas hold pauses often have more hesitant or less terminal cues. The design is also explicitly causal and therefore suitable for a live assistant.</p>
   </div>
 
   <div class="card">

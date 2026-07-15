@@ -45,7 +45,7 @@ def load(labels_csv, pred_csv):
     return pauses
 
 
-def evaluate(pauses, threshold, delay):
+def evaluate(pauses, threshold, delay, cutoff_penalty=2.0):
     turns_cut = set()
     turn_ids = set()
     latencies = []
@@ -59,15 +59,17 @@ def evaluate(pauses, threshold, delay):
         else:  # true end of turn
             latencies.append(delay if fires else TIMEOUT_S)
     cutoff_rate = len(turns_cut) / max(1, len(turn_ids))
-    return cutoff_rate, float(np.mean(latencies)) if latencies else TIMEOUT_S
+    mean_latency = float(np.mean(latencies)) if latencies else TIMEOUT_S
+    penalty = cutoff_penalty * cutoff_rate
+    return cutoff_rate, mean_latency + penalty
 
 
-def score(labels_csv, pred_csv, budget=0.05):
+def score(labels_csv, pred_csv, budget=0.05, cutoff_penalty=2.0):
     pauses = load(labels_csv, pred_csv)
     best = None
     for t in THRESHOLDS:
         for d in DELAYS:
-            cut, lat = evaluate(pauses, t, d)
+            cut, lat = evaluate(pauses, t, d, cutoff_penalty=cutoff_penalty)
             if cut <= budget and (best is None or lat < best["latency"]):
                 best = {"latency": lat, "cutoff": cut, "threshold": t, "delay": d}
     if best is None:  # nothing meets budget: report the never-fire policy
@@ -91,8 +93,9 @@ def main():
     ap.add_argument("--data_dir", required=True)
     ap.add_argument("--pred", required=True)
     ap.add_argument("--budget", type=float, default=0.05)
+    ap.add_argument("--cutoff_penalty", type=float, default=2.0)
     args = ap.parse_args()
-    r = score(os.path.join(args.data_dir, "labels.csv"), args.pred, args.budget)
+    r = score(os.path.join(args.data_dir, "labels.csv"), args.pred, args.budget, args.cutoff_penalty)
     print(f"turns={r['n_turns']}  pauses={r['n_pauses']}  AUC={r['auc']:.3f}")
     print(f"BEST @ <= {int(args.budget*100)}% interrupted turns:")
     print(f"  mean response delay : {r['latency']*1000:.0f} ms   <-- your score, lower is better")

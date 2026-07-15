@@ -70,7 +70,7 @@ def main():
     ap.add_argument("--data_dir", required=True)
     ap.add_argument("--out", default="outputs/predictions.csv")
     ap.add_argument("--model", default="outputs/model.joblib")
-    ap.add_argument("--budget", type=float, default=0.05)
+    ap.add_argument("--budget", type=float, default=0.03)
     args = ap.parse_args()
 
     rows, X, y, groups, keys = load_rows(args.data_dir)

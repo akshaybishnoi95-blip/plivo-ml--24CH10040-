@@ -46,4 +46,4 @@ python starter/score.py --data_dir eot_data/hindi --pred outputs/hindi_predictio
 ```
 
 ## Result summary
-The current approach uses prosodic cues such as energy decay, voicing, pitch behavior, and pause context. It is kept conservative to avoid false cutoffs while still improving response delay over the silence-only baseline.
+The current approach uses prosodic cues such as energy decay, voicing, pitch behavior, and pause context. It is kept conservative to avoid false cutoffs while still improving response delay over the silence-only baseline. A key strength is that the system is explicitly causal and uses only pre-pause audio, which makes it suitable for a live agent. The added multi-window energy patterns and speaking-rate-style cues make the detector more precise than a simple silence-only heuristic, and the design is easier to explain and defend in a discussion.

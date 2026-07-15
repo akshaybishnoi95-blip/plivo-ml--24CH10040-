@@ -85,26 +85,42 @@ def extract_prosodic_features(x, sr, pause_start, pause_idx=None):
     """
     seg = speech_before(x, sr, pause_start, window_s=1.5)
     if len(seg) < sr // 10:
-        return np.zeros(16, dtype=np.float32)
+        return np.zeros(28, dtype=np.float32)
 
     e = frame_energy_db(seg, sr)
     f0 = f0_contour(seg, sr)
     voiced = f0 > 0
     voiced_f0 = f0[voiced]
 
-    last_100ms = e[-max(1, int(sr * 0.1 / 1000)):] if len(e) >= 1 else e
-    last_250ms = e[-max(1, int(sr * 0.25 / 1000)):] if len(e) >= 1 else e
+    def tail_stats(arr, ms):
+        if len(arr) == 0:
+            return 0.0, 0.0, 0.0
+        n = max(1, int(sr * ms / 1000.0))
+        tail = arr[-n:] if len(arr) >= n else arr
+        return float(tail.mean()), float(tail.std()), float(tail[-1] - tail[0]) if len(tail) > 1 else 0.0
+
+    last_100ms_mean, last_100ms_std, last_100ms_slope = tail_stats(e, 100)
+    last_250ms_mean, last_250ms_std, last_250ms_slope = tail_stats(e, 250)
+    last_500ms_mean, last_500ms_std, last_500ms_slope = tail_stats(e, 500)
+    all_mean, all_std, all_slope = float(e.mean()), float(e.std()), float(e[-1] - e[0]) if len(e) > 1 else 0.0
 
     feats = []
     feats.extend([
-        float(e.mean()),
-        float(e.std()),
-        float(e[-1] - e[0]) if len(e) > 1 else 0.0,
-        float(last_100ms.mean()),
-        float(last_250ms.mean()),
-        float(last_250ms.std()),
-        float(last_100ms.mean() / max(e.mean(), 1e-6)),
-        float(last_250ms.mean() / max(e.mean(), 1e-6)),
+        all_mean,
+        all_std,
+        all_slope,
+        last_100ms_mean,
+        last_250ms_mean,
+        last_500ms_mean,
+        last_100ms_std,
+        last_250ms_std,
+        last_500ms_std,
+        last_100ms_slope,
+        last_250ms_slope,
+        last_500ms_slope,
+        last_100ms_mean / max(all_mean, 1e-6),
+        last_250ms_mean / max(all_mean, 1e-6),
+        last_500ms_mean / max(all_mean, 1e-6),
         float(np.percentile(e, 90)),
         float(np.percentile(e, 10)),
     ])
@@ -135,6 +151,10 @@ def extract_prosodic_features(x, sr, pause_start, pause_idx=None):
         feats.append(float(np.polyfit(xs, voiced_f0, 1)[0]))
     else:
         feats.append(0.0)
+
+    # speaking-rate style cue from the number of voiced frames over the window
+    voiced_frame_rate = float(voiced.sum() / max(1, len(voiced))) if len(voiced) else 0.0
+    feats.append(voiced_frame_rate)
 
     feats.append(float(len(seg)) / sr)
     if pause_idx is not None:
